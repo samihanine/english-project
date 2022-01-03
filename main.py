@@ -11,12 +11,17 @@ height = 300
 scale = 30
 pygame.init()  
 scr = pygame.display.set_mode((width,height))
-myfont = pygame.font.SysFont("monospace", 16)
+
 WHITE = (255,255,255)
 ground = height//1.3
-voice_limite = 5
+voice_limite = 4
 global volume
 volume = 0
+global score
+score = 0
+
+font = pygame.font.SysFont("arial", 20)
+
 # -----------------------------
 # All classes
 # -----------------------------
@@ -33,22 +38,32 @@ class Obstacle:
         pygame.draw.rect(scr, self.color, pygame.Rect(self.x,self.y - self.size,scale,self.size))
 
     def move(self):
-        self.x -= 1
+        self.x -= 2
 
         if (self.x < 0):
-            Obstacle.instances.remove(self)
-            i = random.randint(1,3)
-            color = (0,0,0)
-            if (i == 1):
-                color = (0,255,0)
-            if (i == 2):
-                color = (255,0,0)
-            if (i == 3):
-                color = (0,0,255)
-            Obstacle(width, 0, i, color)
+            player.score += 1
+            self.die()
 
-        #if (collision(self, player)):
-            # print("ok")
+        if (collision(self, player)):
+            player.score = 0
+            self.die()
+            #print("loose")
+
+    def die(self):
+        Obstacle.instances.remove(self)
+        
+        i = random.randint(1,3)
+        color = (0,0,0)
+        if (i == 1):
+            color = (0,255,0)
+            Obstacle(width, 0, i, color)
+        if (i == 2):
+            color = (255,0,0)
+            Obstacle(width, 0, i, color)
+        if (i == 3):
+            color = (0,0,255)
+            Obstacle(width, -scale*3, 1, color)
+        
         
 class Player:
     def __init__(self, color):
@@ -57,37 +72,29 @@ class Player:
         self.color = color
         self.size = scale*2
         self.state = 0
+        self.score = 0
         
 
     def draw(self):
         pygame.draw.rect(scr, self.color, pygame.Rect(self.x, self.y - self.size, scale, self.size))
         v = volume
         if (v > voice_limite and self.state == 0):
-            self.state = 1
-        
-        if self.state == 1:
             self.jump(v)
-
+            
         self.gravity()
     
     def gravity(self):
         if (self.y < ground):
-            self.y += 0.5
+            self.y += 1.5
         else:
             self.state = 0
 
         
     def jump(self, v):
+        if ((self.y < ground - scale * 4) == False):
+            self.y -= v
+
         
-        res = (self.size/5) * v * 2
-
-        if (res > scale * 4):
-            res = scale * 4
-
-        print(res)
-        self.y -= 15
-
-        self.state = 2
 
         
 class Map:
@@ -141,6 +148,9 @@ with sd.Stream(callback=print_sound):
         my_map.draw()
         player.draw()
         drawObstacles()
+        score = str(player.score)
+        textimage = font.render(score, True, (255,255,255))
+        scr.blit(textimage, (4,4))
 
         pygame.display.update()
 
